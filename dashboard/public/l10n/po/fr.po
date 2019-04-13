@@ -70,7 +70,7 @@ msgstr "Action"
 
 #: role
 msgctxt "role"
-msgid "role"
+msgid "Role"
 msgstr "Rôle"
 
 #: title
@@ -98,10 +98,10 @@ msgctxt "successActivityUpdate"
 msgid "Activities successfully updated!"
 msgstr "Activités mises à jour avec succès !"
 
-#: viewAllUsers
-msgctxt "viewAllUsers"
-msgid "View all users"
-msgstr "Voir tous les utilisateurs"
+#: viewAllStudents
+msgctxt "viewAllStudents"
+msgid "View all students"
+msgstr "Voir tous les étudiants"
 
 #: viewAllActivities
 msgctxt "viewAllActivities"
@@ -117,6 +117,16 @@ msgstr "Voir toutes les entrées de journal"
 msgctxt "noEntryText"
 msgid "There are no entries available for this user"
 msgstr "Il n'y a pas d'entrée pour cet utilisateur"
+
+#: noClassroomText
+msgctxt "noClassroomText"
+msgid "No classroom found"
+msgstr "Aucune classe trouvée"
+
+#: noUserText
+msgctxt "noUserText"
+msgid "No user found"
+msgstr "Aucun utilisateur trouvé"
 
 #: selectUserText
 msgctxt "selectUserText"
@@ -189,15 +199,15 @@ msgctxt "noGraphDataText"
 msgid "Not Enough Data"
 msgstr "Données insuffisantes"
 
-#: HowUsersAreLaunchingActivities
-msgctxt "HowUsersAreLaunchingActivities"
-msgid "How users are launching activities?"
-msgstr "Comment les utilisateurs lancent les activités ?"
+#: HowStudentsAreLaunchingActivities
+msgctxt "HowStudentsAreLaunchingActivities"
+msgid "How students are launching activities?"
+msgstr "Comment les étudiants lancent les activités ?"
 
-#: HowOftenUsersAreChangingTheirProfileSettings
-msgctxt "HowOftenUsersAreChangingTheirProfileSettings"
-msgid "How often users are changing their profile settings?"
-msgstr "Combien de fois les utilisateurs ont changé leurs paramètres de profil ?"
+#: HowOftenStudentsAreChangingTheirProfileSettings
+msgctxt "HowOftenStudentsAreChangingTheirProfileSettings"
+msgid "How often students are changing their profile settings?"
+msgstr "Combien de fois les étudiants ont-ils modifié les paramètres de leur profil ?"
 
 #: TopContributors
 msgctxt "TopContributors"
@@ -209,10 +219,10 @@ msgctxt "TopActivities"
 msgid "Top Activities"
 msgstr "Top Activités"
 
-#: RecentUsers
-msgctxt "RecentUsers"
-msgid "Recent Users"
-msgstr "Derniers Utilisateurs"
+#: RecentStudents
+msgctxt "RecentStudents"
+msgid "Recent Students"
+msgstr "Derniers Étudiants"
 
 #: RecentEntries
 msgctxt "RecentEntries"
@@ -426,6 +436,11 @@ msgctxt "ErrorCode19"
 msgid "You don't have permission to perform this action"
 msgstr "Vous n'avez pas l'autorisation d'effectuer cette action"
 
+#: ErrorCode20
+msgctxt "ErrorCode20"
+msgid "Please login with another admin account before deleting your account"
+msgstr "Please login with another admin account before deleting your account"
+
 #: ErrorCode21
 msgctxt "ErrorCode21"
 msgid "User not defined!"
@@ -476,10 +491,10 @@ msgctxt "CountEntries"
 msgid "# of Entries"
 msgstr "Nb d'entrées"
 
-#: HowUsersAreActive
-msgctxt "HowUsersAreActive"
-msgid "How many users actives during last month?"
-msgstr "Combien d'utilisateurs actifs le mois dernier ?"
+#: HowStudentsAreActive
+msgctxt "HowStudentsAreActive"
+msgid "How many students active during last month?"
+msgstr "Combien d'étudiants actifs le mois dernier ?"
 
 #: UserActive
 msgctxt "UserActive"
@@ -498,8 +513,8 @@ msgstr "Quels types de client se connectent ?"
 
 #: HowManyEntriesByJournal
 msgctxt "HowManyEntriesByJournal"
-msgid "How many entries by user?"
-msgstr "Combien d'entrées moyenne par utilisateur ?"
+msgid "How many entries by student?"
+msgstr "Combien d'entrées en moyenne par élève ?"
 
 #: AverageEntries
 msgctxt "AverageEntries"

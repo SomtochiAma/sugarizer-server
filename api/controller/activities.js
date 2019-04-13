@@ -25,14 +25,20 @@ exports.load = function(settings, callback) {
 
 	// Read activities directory
 	fs.readdir(activitiesPath, function(err, files) {
-		if (err) throw err;
+		if (err) {
+			console.log("ERROR: can't find activity path '"+activitiesPath+"'");
+			throw err;
+		}
 		files.forEach(function(file) {
 			// If it's not the template directory
 			if (file != templateDirName) {
 				// Get the file name
 				var filePath = activitiesPath + path.sep + file;
 				fs.stat(filePath, function(err, stats) {
-					if (err) throw err;
+					if (err) {
+						console.log("ERROR: can't read '"+filePath+"'");
+						throw err;
+					}
 					// If it's a directory, it's an activity
 					if (stats.isDirectory()) {
 						// Read the activity.info file
@@ -78,7 +84,7 @@ exports.load = function(settings, callback) {
 							}
 						});
 						stream.on('error', function(err) {
-							throw err;
+							console.log("WARNING: can't find info file for '"+activitiesDirName+path.sep + file+"'");
 						});
 					}
 				});
@@ -189,7 +195,7 @@ exports.findAll = function(req, res) {
 exports.findById = function(req, res) {
 
 	//process results based on filters and fields
-	data = process_results(req, activities);
+	var data = process_results(req, activities);
 
 	//find by id
 	var id = req.params.id;
@@ -224,7 +230,7 @@ function addOptions(field, params, options, default_val) {
 function process_results(req, activities) {
 
 	//duplicate activities
-	activities2 = [];
+	var activities2 = [];
 
 	//add options first for filtering
 	var opt = {};
@@ -246,7 +252,7 @@ function process_results(req, activities) {
 	activities.forEach(function(activity, key) {
 
 		//flag
-		isValid = true;
+		var isValid = true;
 
 		//filtering by name
 		if (opt.name) {

@@ -4,7 +4,7 @@
 
 [Sugarizer](https://github.com/llaske/sugarizer) is the open source learning platform based on Sugar that began in the famous One Laptop Per Child project.
 
-Sugarizer Server allow deployment of Sugarizer on a local server, for example on a school server, so expose locally Sugarizer as a Web Application. Sugarizer Server can also be used to provide collaboration features for Sugarizer Application on the network. Sugarizer Server could be deployed on any computer with Node.js and MongoDB, or in a Docker container.
+Sugarizer Server allow deployment of Sugarizer on a local server, for example on a school server, so expose locally Sugarizer as a Web Application. Sugarizer Server can also be used to provide collaboration features for Sugarizer Application on the network. Sugarizer Server could be deployed on any computer with Node.js 6+ and MongoDB 2.6+, or in a Docker container.
 
 
 ## Running using Docker
@@ -44,11 +44,11 @@ Your Sugarizer server will start automatically and will be accessible on http://
 To run Sugarizer Server **without Docker**, follow the step behind. Commands are shown from a new Debian Linux machine and could be different for other platforms or for an already installed machine:
 
 
-**Install Node.js**: Install Node.js and npm to manage packages. See [here](http://nodejs.org/ "here") more information.
+**Install Node.js**: Install Node.js (6+) and npm to manage packages. See [here](http://nodejs.org/ "here") more information.
 
     sudo apt-get install nodejs
 
-**Install MongoDB**: Don't forget to create a /data/db directory to store databases. See [here](http://www.mongodb.org/ "here") more information.
+**Install MongoDB**: Install MongoDB (2.6+). Don't forget to create a /data/db directory to store databases. See [here](http://www.mongodb.org/ "here") more information.
 
     sudo apt-get install mongodb
     sudo mkdir -p /data/db
@@ -77,6 +77,59 @@ To run Sugarizer Server **without Docker**, follow the step behind. Commands are
 * go to Journal view, you should see at the bottom of the screen the two icons to switch to private/shared journal,
 * go to the neighborhood view, you should see one icon for the server and one for you.
 
+## Running on Macosx:Installation on macosx machine
+
+**Install homebrew**:Run this command on terminal
+
+        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+*To check the version type the following command.*
+        
+        brew -v
+
+**Installing Node.js**:In the terminal type the following command to install Node.
+        
+        brew install node
+
+*If everything installed successfully then you can type in the following command in the terminal to check the Node and NPM version.*
+        
+        node -v
+        npm -v
+
+**Install and Run MongoDB with Homebrew**
+
+*Open the Terminal and type*
+
+        brew install mongodb
+
+*After downloading Mongo, create the “db” directory. This is where the Mongo data files will live. You can create the directory in the default location by running*
+        
+        mkdir -p /data/db
+
+*Make sure that the /data/db directory has the right permissions by running*
+        
+        sudo chown -R `id -un` /data/db
+
+Run the Mongo daemon, in one of your terminal windows run " mongod ". This should start the Mongo server. 
+
+To stop the Mongo daemon hit ctrl-c
+
+
+**Install Sugarizer Client and Server**
+
+        brew install git
+        cd desktop
+        git clone https://github.com/llaske/sugarizer
+        git clone https://github.com/llaske/sugarizer-server
+        cd sugarizer-server
+        npm install
+
+**Run MongoDB and Sugarizer Server**:Run mongod and Sugarizer.
+
+        mongod
+        node sugarizer.js
+
+**Check your install**: To check your install, run "http://127.0.0.1:8080" in your browser:
 
 ## Running from a Raspberry Pi
 
@@ -86,8 +139,13 @@ To deploy Sugarizer Server from a Raspberry Pi, a specific packaging name [Sugar
 
 You could install on any existing cloud platform (Amazon, Microsoft Azure, Google Cloud Platform, ...). Detail of settings for:
 
-* **Google Cloud Platform** is available [here](docs/deploytoGCP.md), 
-* **Amazon Web Services** is available [here](docs/deploytoAWS.md). 
+* **Google Cloud Platform** is available [here](docs/deploytoGCP.md),
+* **Amazon Web Services** is available [here](docs/deploytoAWS.md).
+
+
+## Global architecture
+
+See [here](docs/architecture.md) for a global description of the Sugarizer Server architecture.
 
 
 ## Server settings
@@ -127,6 +185,7 @@ Following is the typical content of Sugarizer Server settings file:
 	users = users
 	journal = journal
 	stats = stats
+	classrooms = classrooms
 	waitdb = 1
 
 	[statistics]
@@ -228,6 +287,14 @@ To implement the above functionalities, the sugarizer backend expose an API. The
         [PUT]    api/v1/journal/:jid?oid=:oid
         [DELETE] api/v1/journal/:jid?oid=:oid
 
+
+#### CLASSROOM ROUTES
+
+        [GET]    api/v1/classrooms/
+        [GET]    api/v1/classrooms/:cid
+        [POST]   api/v1/classrooms/
+        [PUT]    api/v1/classrooms/:cid
+        [DELETE] api/v1/classrooms/
 
 #### STATS ROUTES
 

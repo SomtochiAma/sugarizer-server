@@ -1,6 +1,8 @@
 var fs = require('fs');
+var os = require('os');
 var ini = null;
 var language = '*';
+var moment = require('moment');
 
 exports.init = function(settings) {
 	ini = settings;
@@ -32,6 +34,14 @@ exports.l10n = {
 	}
 }
 
+exports.reinitLocale = function(req) {
+	// reinit l10n and moment with locale
+	if (req.query && req.query.lang) {
+		exports.l10n.setLanguage(req.query.lang);
+		moment.locale(req.query.lang);
+	}
+};
+
 exports.loadCredentials = function(settings) {
 	if (!settings.security.certificate_file || !settings.security.key_file) {
 		return null;
@@ -57,6 +67,33 @@ exports.getHeaders = function(req) {
 		"x-access-token": (req.session.user ? req.session.user.token : ""),
 		"x-key": (req.session.user ? req.session.user.user._id : ""),
 	}
+}
+
+exports.getClientIP = function(req) {
+
+	return req.headers['x-real-ip'] ||
+		req.headers['x-forwarded-for'] ||
+		req.connection.remoteAddress ||
+		req.socket.remoteAddress ||
+		req.connection.socket.remoteAddress;
+}
+
+
+exports.getServerIP = function() {
+
+	var interfaces = os.networkInterfaces();
+	var addresses = [];
+	for (var i in interfaces) {
+		for (var j in interfaces[i]) {
+			var address = interfaces[i][j];
+			if (address.family === 'IPv6' && !address.internal) {
+				addresses.push(address.address);
+			}
+		}
+	}
+	addresses.push("::1");
+	addresses.push("::ffff:127.0.0.1");
+	return addresses;
 }
 
 exports.getAPIUrl = function(req) {

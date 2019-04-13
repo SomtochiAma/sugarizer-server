@@ -1,7 +1,8 @@
 var jwt = require('jwt-simple'),
 	users = require('./users.js'),
 	mongo = require('mongodb'),
-	journal = require('./journal');
+	journal = require('./journal'),
+	common = require('../../dashboard/helper/common');
 
 
 
@@ -167,6 +168,35 @@ exports.updateTimestamp = function(uid, callback) {
 
 	//update user time stamp function
 	users.updateUserTimestamp(uid, callback)
+}
+
+//check admin
+exports.checkAdmin = function(req, res, next) {
+	if (req.user.role == 'student') {
+		if (req.user._id != req.query.uid) {
+			return res.status(401).send({
+				'error': 'You don\'t have permission to perform this action',
+				'code': 19
+			});
+		}
+	}
+	next();
+}
+exports.checkAdminOrLocal = function(req, res, next) {
+	var whishedRole = 'student';
+	if (req.body && req.body.user) {
+		var user = JSON.parse(req.body.user);
+		whishedRole = user.role.toLowerCase();
+	}
+	var ip = common.getClientIP(req);
+	var serverIp = common.getServerIP();
+	if (whishedRole == 'admin' && serverIp.indexOf(ip) == -1) {
+		return res.status(401).send({
+			'error': 'You don\'t have permission to perform this action',
+			'code': 19
+		});
+	}
+	next();
 }
 
 // private method

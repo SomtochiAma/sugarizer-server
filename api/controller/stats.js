@@ -1,32 +1,19 @@
 // stats handling
 
-var mongo = require('mongodb');
+var common = require('../../dashboard/helper/common');
 
-var Server = mongo.Server,
-	Db = mongo.Db;
-
-var server;
-var db;
-var isActive = true
+var isActive = true;
 
 var statsCollection;
 
-// Init database
-exports.init = function(settings, callback) {
-	statsCollection = settings.collections.stats;
-	isActive = settings.statistics.active
-	server = new Server(settings.database.server, settings.database.port, {
-		auto_reconnect: true
-	});
-	db = new Db(settings.database.name, server, {
-		w: 1
-	});
+var db;
 
-	db.open(function(err, db) {
-		if (err) {}
-		if (callback) callback();
-	});
-}
+// Init database
+exports.init = function(settings, database) {
+	statsCollection = settings.collections.stats;
+	isActive = settings.statistics.active;
+	db = database;
+};
 
 
 /**
@@ -90,13 +77,13 @@ exports.addStats = function(req, res) {
 	//add client IP
 	if (stats.constructor === Array) {
 		for (var i = 0; i < stats.length; i++) {
-			stats[i].user_ip = getClientIP(req);
+			stats[i].user_ip = common.getClientIP(req);
 		}
 	} else {
-		stats.user_ip = getClientIP(req);
+		stats.user_ip = common.getClientIP(req);
 	}
 	db.collection(statsCollection, function(err, collection) {
-		collection.insert(stats, {
+		collection.insertMany(stats, {
 			safe: true
 		}, function(err, result) {
 			if (err) {
@@ -151,7 +138,7 @@ exports.deleteStats = function(req, res) {
 	}
 
 	db.collection(statsCollection, function(err, collection) {
-		collection.remove({
+		collection.deleteOne({
 			'user_id': req.query.uid
 		}, function(err, result) {
 			if (err) {
@@ -227,7 +214,7 @@ exports.findAll = function(req, res) {
 
 	//get data
 	db.collection(statsCollection, function(err, collection) {
-		collection.find(query, {}, options).toArray(function(err, data) {
+		collection.find(query, options).toArray(function(err, data) {
 			res.send(data);
 		});
 	});
@@ -274,15 +261,6 @@ function addQuery(filter, params, query, default_val) {
 	//return
 	return query;
 }
-
-//get client IP
-function getClientIP(req) {
-
-	return req.headers['x-forwarded-for'] ||
-		req.connection.remoteAddress ||
-		req.socket.remoteAddress ||
-		req.connection.socket.remoteAddress;
-};
 
 //check active status of status api
 function isStatsActive(req, res) {

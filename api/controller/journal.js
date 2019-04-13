@@ -2,10 +2,7 @@
 var mongo = require('mongodb'),
 	users = require('./users');
 
-var Server = mongo.Server,
-	Db = mongo.Db;
 
-var server;
 var db;
 
 var journalCollection;
@@ -15,46 +12,36 @@ var shared = null;
 //- Utility functions
 
 // Init database
-exports.init = function(settings, callback) {
-	journalCollection = settings.collections.journal;
-	server = new Server(settings.database.server, settings.database.port, {
-		auto_reconnect: true
-	});
-	db = new Db(settings.database.name, server, {
-		w: 1
-	});
+exports.init = function(settings, database) {
 
 	// Open the journal collection
-	db.open(function(err, db) {
-		if (!err) {
-			db.collection(journalCollection, function(err, collection) {
-				// Get the shared journal collection
-				collection.findOne({
-					'shared': true
-				}, function(err, item) {
-					// Not found, create one
-					if (!err && item == null) {
-						collection.insert({
-							content: [],
-							shared: true
-						}, {
-							safe: true
-						}, function(err, result) {
-							shared = result.ops[0];
-						});
-					}
+	journalCollection = settings.collections.journal;
 
-					// Already exist, save it
-					else if (item != null) {
-						shared = item;
-					}
-
-					if (callback) callback();
+	db = database;
+	db.collection(journalCollection, function(err, collection) {
+		// Get the shared journal collection
+		collection.findOne({
+			'shared': true
+		}, function(err, item) {
+			// Not found, create one
+			if (!err && item == null) {
+				collection.insertOne({
+					content: [],
+					shared: true
+				}, {
+					safe: true
+				}, function(err, result) {
+					shared = result.ops[0];
 				});
-			});
-		}
+			}
+
+			// Already exist, save it
+			else if (item != null) {
+				shared = item;
+			}
+		});
 	});
-}
+};
 
 // Get shared journal
 exports.getShared = function() {
@@ -64,7 +51,7 @@ exports.getShared = function() {
 // Create a new journal
 exports.createJournal = function(callback) {
 	db.collection(journalCollection, function(err, collection) {
-		collection.insert({
+		collection.insertOne({
 			content: [],
 			shared: false
 		}, {
@@ -266,37 +253,39 @@ exports.findJournalContent = function(req, res) {
 
 	//get data
 	db.collection(journalCollection, function(err, collection) {
-		collection.aggregate(options, function(err, items) {
+		collection.aggregate(options, function(err, cursor) {
+			cursor.toArray(function(err, items) {
 
-			//check for errors
-			if (err) {
-				return res.status(500).send({
-					'error': err,
-					'code': 5
-				});
-			}
-
-			//define var
-			var params = JSON.parse(JSON.stringify(req.query));
-			var route = req.route.path;
-			var skip = parseInt(req.query.offset || 0);
-			var limit = parseInt(req.query.limit || 10);
-			var total = items.length;
-
-			//apply pagination
-			items = items.slice(skip, (skip + limit));
-
-			// Return
-			return res.send({
-				'entries': items,
-				'offset': skip,
-				'limit': limit,
-				'total': total,
-				'links': {
-					'prev_page': ((skip - limit) >= 0) ? formPaginatedUrl(route, params, (skip - limit), limit) : undefined,
-					'curr_page': formPaginatedUrl(route, params, (skip), limit),
-					'next_page': ((skip + limit) < total) ? formPaginatedUrl(route, params, (skip + limit), limit) : undefined,
+				//check for errors
+				if (err) {
+					return res.status(500).send({
+						'error': err,
+						'code': 5
+					});
 				}
+
+				//define var
+				var params = JSON.parse(JSON.stringify(req.query));
+				var route = req.route.path;
+				var skip = parseInt(req.query.offset || 0);
+				var limit = parseInt(req.query.limit || 10);
+				var total = items.length;
+
+				//apply pagination
+				items = items.slice(skip, (skip + limit));
+
+				// Return
+				return res.send({
+					'entries': items,
+					'offset': skip,
+					'limit': limit,
+					'total': total,
+					'links': {
+						'prev_page': ((skip - limit) >= 0) ? formPaginatedUrl(route, params, (skip - limit), limit) : undefined,
+						'curr_page': formPaginatedUrl(route, params, (skip), limit),
+						'next_page': ((skip + limit) < total) ? formPaginatedUrl(route, params, (skip + limit), limit) : undefined,
+					}
+				});
 			});
 		});
 	});
@@ -520,7 +509,7 @@ exports.addEntryInJournal = function(req, res) {
 					}
 				};
 				db.collection(journalCollection, function(err, collection) {
-					collection.update({
+					collection.updateOne({
 						'_id': new mongo.ObjectID(jid)
 					}, newcontent, {
 						safe: true
@@ -628,7 +617,7 @@ exports.updateEntryInJournal = function(req, res) {
 		}
 	};
 	db.collection(journalCollection, function(err, collection) {
-		collection.update({
+		collection.updateOne({
 			'_id': new mongo.ObjectID(jid)
 		}, deletecontent, {
 			safe: true
@@ -697,7 +686,7 @@ exports.removeInJournal = function(req, res) {
 	//whether or partial is deleted!
 	if (type == 'full') {
 		db.collection(journalCollection, function(err, collection) {
-			collection.remove({
+			collection.deleteOne({
 				'_id': new mongo.ObjectID(jid)
 			}, function(err, result) {
 				if (err) {
@@ -722,7 +711,7 @@ exports.removeInJournal = function(req, res) {
 	} else {
 		if (oid) {
 			db.collection(journalCollection, function(err, collection) {
-				collection.update({
+				collection.updateOne({
 					'_id': new mongo.ObjectID(jid)
 				}, {
 					$pull: {

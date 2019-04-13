@@ -136,12 +136,26 @@
   float: left;
 }
 
+.student-icon {
+  cursor: pointer;
+  background-image: url('/public/img/student-icon.svg');
+  background-size: 24px;
+  height: 24px;
+  width: 24px;
+  display: block;
+  float: left;
+}
+
 .shutdown-icon {
   background-image: url('/public/img/system-shutdown.svg')
 }
 
 .stats-icon {
   background-image: url('/public/img/stat-icon.svg')
+}
+
+.classroom-icon {
+  background-image: url('/public/img/classroom-icon.svg')
 }
 
 .material-icons.dp24 {
@@ -176,9 +190,20 @@
   border-radius: 1000px;
 }
 
+.pointer {
+  cursor: pointer;
+}
+
+.dashboard-table-title {
+  position: fixed;
+}
+
+.dashboard-table {
+  margin-top: 20px;
+}
+
 .color {
   margin: 0 0 5px 0;
-  cursor: pointer;
 }
 
 .color .xo-icon {

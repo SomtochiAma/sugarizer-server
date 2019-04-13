@@ -2,28 +2,30 @@
 var activities = require('./controller/activities'),
 	journal = require('./controller/journal'),
 	users = require('./controller/users'),
+	classrooms = require('./controller/classrooms'),
 	auth = require('./controller/auth'),
 	stats = require('./controller/stats'),
 	validate = require('./middleware/validateRequest'),
 	presence = require('./middleware/presence'),
 	common = require('../dashboard/helper/common');
 
-module.exports = function(app, ini) {
+module.exports = function(app, ini, db) {
 
 	//Only the requests that start with /api/v1/* will be checked for the token.
 	app.all('/api/v1/*', [validate]);
 
 	// Init modules
 	activities.load(ini);
-	journal.init(ini);
-	users.init(ini);
-	presence.init(ini);
-	stats.init(ini);
+	journal.init(ini, db);
+	users.init(ini, db);
+	presence.init(ini, db);
+	stats.init(ini, db);
+	classrooms.init(ini, db);
 
 	// Routes that can be accessed by any one
 	app.get('/api', common.getAPIInfo);
 	app.post('/auth/login', auth.login);
-	app.post('/auth/signup', auth.signup);
+	app.post('/auth/signup', auth.checkAdminOrLocal, auth.signup);
 
 	// Register activities list API
 	app.get("/api/v1/activities", activities.findAll);
@@ -48,6 +50,13 @@ module.exports = function(app, ini) {
 	app.post("/api/v1/journal/:jid", journal.addEntryInJournal);
 	app.put("/api/v1/journal/:jid", journal.updateEntryInJournal);
 	app.delete("/api/v1/journal/:jid", journal.removeInJournal);
+
+	// Register classroom API
+	app.get("/api/v1/classrooms", auth.checkAdmin, classrooms.findAll);
+	app.get("/api/v1/classrooms/:classid", auth.checkAdmin, classrooms.findById);
+	app.post("/api/v1/classrooms", auth.checkAdmin, classrooms.addClassroom);
+	app.put("/api/v1/classrooms/:classid", auth.checkAdmin, classrooms.updateClassroom);
+	app.delete("/api/v1/classrooms/:classid", auth.checkAdmin, classrooms.removeClassroom);
 
 	// If no route is matched by now, it must be a 404
 	app.use('/api/v1/*', function(req, res, next) {

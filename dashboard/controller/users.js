@@ -10,16 +10,13 @@ var request = require('request'),
 var ini = null;
 exports.init = function(settings) {
 	ini = settings;
-}
+};
 
 // main landing page
 exports.index = function(req, res) {
 
 	// reinit l10n and moment with locale
-	if (req.query && req.query.lang) {
-		common.l10n.setLanguage(req.query.lang);
-		moment.locale(req.query.lang);
-	}
+	common.reinitLocale(req);
 
 	//query
 	var query = {
@@ -39,6 +36,14 @@ exports.index = function(req, res) {
 	if (req.query.offset != '') {
 		query['offset'] = req.query.offset;
 	}
+	if (req.query.classid != '') {
+		query['classid'] = req.query.classid;
+	}
+
+	var classroom_id;
+	if (req.query.classroom_id) {
+		classroom_id = req.query.classroom_id;
+	}
 
 	// call
 	request({
@@ -50,16 +55,21 @@ exports.index = function(req, res) {
 	}, function(error, response, body) {
 		if (response.statusCode == 200) {
 
-			// send to activities page
-			res.render('users', {
-				module: 'users',
-				moment: moment,
-				query: query,
-				data: body,
-				account: req.session.user,
-				server: ini.information
-			});
+			// get classrooms list
+			getClassrooms(req, function(classrooms){
 
+				// send to activities page
+				res.render('users', {
+					module: 'users',
+					moment: moment,
+					query: query,
+					classrooms: classrooms,
+					classroom_id: classroom_id,
+					data: body,
+					account: req.session.user,
+					server: ini.information
+				});
+			});
 		} else {
 			req.flash('errors', {
 				msg: common.l10n.get('ErrorCode'+body.code)
@@ -70,13 +80,16 @@ exports.index = function(req, res) {
 
 exports.addUser = function(req, res) {
 
+	// reinit l10n and momemt with locale
+	common.reinitLocale(req);
+
 	if (req.method == 'POST') {
 
 		// validate
 		req.body.name = req.body.name.trim();
 		req.body.password = req.body.password.trim();
 		req.body.color = JSON.parse(req.body.color);
-		req.assert('name', common.l10n.get('NameNotAlphanumeric')).isAlphanumeric();
+		req.assert('name', common.l10n.get('UsernameInvalid')).matches(/^[a-z0-9 ]+$/i);
 		req.assert('password', common.l10n.get('PasswordAtLeast', {count:ini.security.min_password_size})).len(ini.security.min_password_size);
 		req.body.options = { sync: true, stats: true };
 
@@ -95,12 +108,16 @@ exports.addUser = function(req, res) {
 				uri: common.getAPIUrl(req) + 'api/v1/users'
 			}, function(error, response, body) {
 				if (response.statusCode == 200) {
-
-					// send to users page
 					req.flash('success', {
-						msg: common.l10n.get('UserCreated')
+						msg: common.l10n.get('UserCreated', {name: req.body.name})
 					});
-					return res.redirect('/dashboard/users/edit/' + body._id);
+					if (body.role == "admin") {
+						// send to admin page
+						return res.redirect('/dashboard/users/?role=admin');
+					} else {
+						// send to users page
+						return res.redirect('/dashboard/users/');
+					}
 				} else {
 					req.flash('errors', {
 						msg: common.l10n.get('ErrorCode'+body.code)
@@ -110,7 +127,21 @@ exports.addUser = function(req, res) {
 			});
 		} else {
 			req.flash('errors', errors);
-			return res.redirect('/dashboard/users/add');
+			return res.render('addEditUser', {
+				module: 'users',
+				user: {
+					name:req.body.name,
+					password: req.body.password,
+					color: req.body.color,
+					language:req.body.language,
+					role:req.body.role
+				},
+				xocolors: xocolors,
+				moment: moment,
+				emoji: emoji,
+				account: req.session.user,
+				server: ini.information
+			});
 		}
 
 	} else {
@@ -120,12 +151,16 @@ exports.addUser = function(req, res) {
 			xocolors: xocolors,
 			moment: moment,
 			emoji: emoji,
-			account: req.session.user
+			account: req.session.user,
+			server: ini.information
 		});
 	}
 };
 
 exports.editUser = function(req, res) {
+
+	// reinit l10n and momemt with locale
+	common.reinitLocale(req);
 
 	if (req.params.uid) {
 		if (req.method == 'POST') {
@@ -150,12 +185,16 @@ exports.editUser = function(req, res) {
 					uri: common.getAPIUrl(req) + 'api/v1/users/' + req.params.uid
 				}, function(error, response, body) {
 					if (response.statusCode == 200) {
-
-						// send back
 						req.flash('success', {
-							msg: common.l10n.get('UserUpdated')
+							msg: common.l10n.get('UserUpdated', {name: req.body.name})
 						});
-						return res.redirect('/dashboard/users/edit/' + req.params.uid);
+						if (body.role == "admin") {
+							// send to admin page
+							return res.redirect('/dashboard/users/?role=admin');
+						} else {
+							// send to users page
+							return res.redirect('/dashboard/users/');
+						}
 					} else {
 						req.flash('errors', {
 							msg: common.l10n.get('ErrorCode'+body.code)
@@ -183,7 +222,8 @@ exports.editUser = function(req, res) {
 						moment: moment,
 						emoji: emoji,
 						xocolors: xocolors,
-						account: req.session.user
+						account: req.session.user,
+						server: ini.information
 					});
 				} else {
 					req.flash('errors', {
@@ -204,6 +244,14 @@ exports.editUser = function(req, res) {
 exports.deleteUser = function(req, res) {
 
 	if (req.params.uid) {
+		var role = req.query.role || 'student';
+		var name = req.query.name || 'user';
+		if (req.params.uid == common.getHeaders(req)['x-key']) {
+			req.flash('errors', {
+				msg: common.l10n.get('ErrorCode20')
+			});
+			return res.redirect('/dashboard/users/?role='+role);
+		}
 		request({
 			headers: common.getHeaders(req),
 			json: true,
@@ -214,14 +262,14 @@ exports.deleteUser = function(req, res) {
 
 				// send to users page
 				req.flash('success', {
-					msg: common.l10n.get('UserDeleted')
+					msg: common.l10n.get('UserDeleted', {name: name})
 				});
 			} else {
 				req.flash('errors', {
 					msg: common.l10n.get('ErrorCode'+body.code)
 				});
 			}
-			return res.redirect('/dashboard/users');
+			return res.redirect('/dashboard/users?role='+role);
 		});
 	} else {
 		req.flash('errors', {
@@ -230,3 +278,28 @@ exports.deleteUser = function(req, res) {
 		return res.redirect('/dashboard/users');
 	}
 };
+
+/**
+ * private function
+ */
+function getClassrooms(req, callback){
+	request({
+		headers: common.getHeaders(req),
+		json: true,
+		method: 'GET',
+		qs: {
+			limit: 100000 // get all possible classes
+		},
+		uri: common.getAPIUrl(req) + 'api/v1/classrooms'
+	}, function(error, response, body) {
+		if (response.statusCode == 200) {
+
+			// return list of classrooms
+			callback(body.classrooms);
+		} else {
+			req.flash('errors', {
+				msg: common.l10n.get('ErrorCode'+body.code)
+			});
+		}
+	});
+}

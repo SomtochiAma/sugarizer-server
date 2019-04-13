@@ -3,7 +3,7 @@ var request = require('request'),
 	dashboard = require('./dashboard'),
 	moment = require('moment'),
 	common = require('../helper/common'),
-	sync = require('synchronize');
+	async = require('async');
 
 exports.getGraph = function(req, res) {
 
@@ -46,6 +46,7 @@ function getTopContributors(req, res) {
 			for (var i = 0; i < journals.length; i++) {
 				if (hashList[journals[i]._id] != undefined) {
 					journals[i].user = hashList[journals[i]._id].name;
+					journals[i].userID = hashList[journals[i]._id]._id;
 					j2.push(journals[i]);
 					totalEntries += journals[i].count;
 				}
@@ -65,12 +66,14 @@ function getTopContributors(req, res) {
 			//take 5 entries
 			journals = journals.slice(0, 5);
 
-			//get labels & data
-			var labels = [];
-			var data = [];
+			//get labels, data, journal IDs and user IDs
+			var labels = [], data = [], journalIDs = [], userIDs = [];
+
 			for (var i = 0; i < journals.length; i++) {
 				labels.push(journals[i].user);
 				data.push(journals[i].count);
+				journalIDs.push(journals[i]._id);
+				userIDs.push(journals[i].userID);
 			}
 
 			//return
@@ -99,7 +102,9 @@ function getTopContributors(req, res) {
 							}
 						}]
 					}
-				}
+				},
+				journalIDs: journalIDs,
+				userIDs: userIDs
 			})
 		})
 	})
@@ -138,9 +143,8 @@ function getTopActivities(req, res) {
 			//take 5 entries
 			freq2 = freq2.slice(0, 5);
 
-			//get labels & data
-			var labels = [];
-			var data = [];
+			//get labels, data & activity IDs
+			var labels = [], data = [], activityIDs = [];
 			for (var i = 0; i < freq2.length; i++) {
 				var label = freq2[i].id;
 				for (var j = 0 ; j < activities.length ; j++) {
@@ -151,6 +155,7 @@ function getTopActivities(req, res) {
 				}
 				labels.push(label);
 				data.push(freq2[i].count);
+				activityIDs.push(freq2[i].id);
 			}
 
 			//return data
@@ -170,7 +175,8 @@ function getTopActivities(req, res) {
 					}]
 				},
 				element: req.query.element,
-				graph: 'doughnut'
+				graph: 'doughnut',
+				activityIDs: activityIDs
 			})
 		})
 	})
@@ -245,6 +251,7 @@ function getRecentActivities(req, res) {
 										<td><div class="color" id="' + allEntries[i].objectId + i.toString() + '"><div class="xo-icon"></div></div></td>\
 										<script>new icon().load("' +  (hashList[allEntries[i].metadata.activity] || '/public/img/application-x-generic.svg') + '", ' + JSON.stringify(allEntries[i].metadata.buddy_color) + ', "' + allEntries[i].objectId + i.toString() + '")</script>\
 										<td title="' + allEntries[i].metadata.title + '">' + allEntries[i].metadata.title + '</td>\
+										<td title="' + allEntries[i].metadata.buddy_name + '">' + allEntries[i].metadata.buddy_name + '</td>\
 										<td class="text-muted">' + moment(allEntries[i].metadata.timestamp).calendar() + '</td>\
 								</tr>'
 			}
@@ -266,54 +273,62 @@ function getAllEntriesList(req, res, limit, callback) {
 		//entries
 		var allEntries = [];
 
-		//setup sync fibre
-		sync.fiber(function() {
-
-			// //get shared entries
-			if (users.users.length > 0) {
-				// call
-				var d = (sync.await(request({
-					headers: common.getHeaders(req),
-					json: true,
-					method: 'GET',
-					qs: {
-						offset: 0,
-						limit: limit,
-						sort: '-timestamp'
-					},
-					uri: common.getAPIUrl(req) + 'api/v1/journal/' + users.users[0].shared_journal
-				}, sync.defer())))
-
-				//merge data
-				if (d.body.entries) {
-					allEntries = allEntries.concat(d.body.entries);
+		//async
+		async.series([
+			function(callback) {
+				if (users.users.length > 0) {
+					// call
+					request({
+						headers: common.getHeaders(req),
+						json: true,
+						method: 'GET',
+						qs: {
+							offset: 0,
+							limit: limit,
+							sort: '-timestamp'
+						},
+						uri: common.getAPIUrl(req) + 'api/v1/journal/' + users.users[0].shared_journal
+					}, function(error, response, body) {
+						//merge data
+						if (body.entries) {
+							allEntries = allEntries.concat(body.entries);
+						}
+						callback(null);
+					});
+				} else {
+					callback(null);
 				}
+			},
+			function(callback) {
+				//for each user
+				async.each(users.users, function(user, icallback) {
+					// call
+					request({
+						headers: common.getHeaders(req),
+						json: true,
+						method: 'GET',
+						qs: {
+							uid: user._id,
+							offset: 0,
+							limit: limit,
+							sort: '-timestamp'
+						},
+						uri: common.getAPIUrl(req) + 'api/v1/journal/' + user.private_journal
+					}, function(error, response, body) {
+						//merge data
+						if (body.entries) {
+							allEntries = allEntries.concat(body.entries);
+						}
+						icallback();
+					});
+				}, function() {
+					callback(null);
+				});
+
 			}
-
-			//for each user
-			for (var i = 0; i < users.users.length; i++) {
-
-				// call
-				var d = (sync.await(request({
-					headers: common.getHeaders(req),
-					json: true,
-					method: 'GET',
-					qs: {
-						uid: users.users[i]._id,
-						offset: 0,
-						limit: limit,
-						sort: '-timestamp'
-					},
-					uri: common.getAPIUrl(req) + 'api/v1/journal/' + users.users[i].private_journal
-				}, sync.defer())))
-
-				//merge data
-				if (d.body.entries) {
-					allEntries = allEntries.concat(d.body.entries);
-				}
-			}
+		], function() {
 			callback(allEntries);
-		})
+		});
 	})
 }
 

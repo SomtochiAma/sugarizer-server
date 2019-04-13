@@ -1,31 +1,22 @@
 // User handling
 
 var mongo = require('mongodb'),
+	classroom = require('./classrooms'),
 	journal = require('./journal');
 
-var Server = mongo.Server,
-	Db = mongo.Db;
-
-var server;
 var db;
 
 var usersCollection;
+var classroomsCollection;
+
 
 // Init database
-exports.init = function(settings, callback) {
+exports.init = function(settings, database) {
 	usersCollection = settings.collections.users;
-	server = new Server(settings.database.server, settings.database.port, {
-		auto_reconnect: true
-	});
-	db = new Db(settings.database.name, server, {
-		w: 1
-	});
-
-	db.open(function(err, db) {
-		if (err) {}
-		if (callback) callback();
-	});
-}
+	classroomsCollection = settings.collections.classrooms;
+	journalCollection = settings.collections.journal;
+	db = database;
+};
 
 /**
  * @api {get} api/v1/users/:id Get user detail
@@ -170,6 +161,7 @@ exports.findAll = function(req, res) {
 	//prepare condition
 	var query = {};
 	query = addQuery('name', req.query, query);
+	query = addQuery('classid', req.query, query);
 	query = addQuery('language', req.query, query);
 	query = addQuery('role', req.query, query, 'student');
 	query = addQuery('q', req.query, query);
@@ -183,7 +175,7 @@ exports.findAll = function(req, res) {
 	db.collection(usersCollection, function(err, collection) {
 
 		//count data
-		collection.count(query, function(err, count) {
+		collection.countDocuments(query, function(err, count) {
 
 			//define var
 			var params = JSON.parse(JSON.stringify(req.query));
@@ -282,6 +274,10 @@ function addQuery(filter, params, query, default_val) {
 		if (filter == 'q') {
 			query['name'] = {
 				$regex: new RegExp(params[filter], "i")
+			};
+		} else if (filter == 'classid') {
+			query['_id'] = {
+				$in: params[filter].split(',').map(id => new mongo.ObjectID(id))
 			};
 		} else {
 			query[filter] = {
@@ -399,7 +395,7 @@ exports.addUser = function(req, res) {
 			//create user based on role
 			if (user.role == 'admin') {
 				db.collection(usersCollection, function(err, collection) {
-					collection.insert(user, {
+					collection.insertOne(user, {
 						safe: true
 					}, function(err, result) {
 						if (err) {
@@ -420,7 +416,7 @@ exports.addUser = function(req, res) {
 						// add journal to the new user
 						user.private_journal = result.ops[0]._id;
 						user.shared_journal = journal.getShared()._id;
-						collection.insert(user, {
+						collection.insertOne(user, {
 							safe: true
 						}, function(err, result) {
 							if (err) {
@@ -560,7 +556,7 @@ exports.updateUser = function(req, res) {
 //private function to update user
 function updateUser(uid, user, res) {
 	db.collection(usersCollection, function(err, collection) {
-		collection.update({
+		collection.updateOne({
 			'_id': new mongo.ObjectID(uid)
 		}, {
 			$set: user
@@ -627,21 +623,64 @@ exports.removeUser = function(req, res) {
 			return;
 		}
 	}
+
 	//delete user from db
 	var uid = req.params.uid;
 	db.collection(usersCollection, function(err, collection) {
-		collection.remove({
+		collection.findOneAndDelete({
 			'_id': new mongo.ObjectID(uid)
-		}, function(err, result) {
+		}, function(err, user) {
 			if (err) {
 				res.status(500).send({
 					'error': 'An error has occurred',
 					'code': 10
 				});
 			} else {
-				if (result && result.result && result.result.n == 1) {
-					res.send({
-						'user_id': uid
+				if (user && user.ok && user.value) {
+					// Remove user form classroom
+					db.collection(classroomsCollection, function(err, collection) {
+						collection.updateMany({},
+							{
+								$pull: { students: uid}
+							}, {
+								safe: true
+							},
+							function(err, result) {
+								if (err) {
+									res.status(500).send({
+										error: "An error has occurred",
+										code: 10
+									});
+								} else {
+									if (user.value.private_journal) {
+										db.collection(journalCollection, function(err, collection) {
+											collection.deleteMany({
+													_id: new mongo.ObjectID(user.value.private_journal)
+												}, {
+													safe: true
+												},
+												function(err, result) {
+													if (err) {
+														res.status(500).send({
+															error: "An error has occurred",
+															code: 10
+														});
+													} else {
+														res.send({
+															'user_id': uid
+														});
+													}
+												}
+											);
+										});
+									} else {
+										res.send({
+											'user_id': uid
+										});
+									}
+								}
+							}
+						);
 					});
 				} else {
 					res.status(401).send({
@@ -658,7 +697,7 @@ exports.removeUser = function(req, res) {
 exports.updateUserTimestamp = function(uid, callback) {
 
 	db.collection(usersCollection, function(err, collection) {
-		collection.update({
+		collection.updateOne({
 			'_id': new mongo.ObjectID(uid)
 		}, {
 			$set: {

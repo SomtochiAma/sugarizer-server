@@ -70,8 +70,8 @@ msgstr "Action"
 
 #: role
 msgctxt "role"
-msgid "role"
-msgstr "role"
+msgid "Role"
+msgstr "Role"
 
 #: language
 msgctxt "language"
@@ -98,10 +98,10 @@ msgctxt "successActivityUpdate"
 msgid "Activities successfully updated!"
 msgstr "Activities successfully updated!"
 
-#: viewAllUsers
-msgctxt "viewAllUsers"
-msgid "View all users"
-msgstr "View all users"
+#: viewAllStudents
+msgctxt "viewAllStudents"
+msgid "View all students"
+msgstr "View all students"
 
 #: viewAllActivities
 msgctxt "viewAllActivities"
@@ -117,6 +117,16 @@ msgstr "View all journal entries"
 msgctxt "noEntryText"
 msgid "There are no entries available for this user"
 msgstr "There are no entries available for this user"
+
+#: noClassroomText
+msgctxt "noClassroomText"
+msgid "No classroom found"
+msgstr "No classroom found"
+
+#: noUserText
+msgctxt "noUserText"
+msgid "No user found"
+msgstr "No user found"
 
 #: selectUserText
 msgctxt "selectUserText"
@@ -189,15 +199,15 @@ msgctxt "noGraphDataText"
 msgid "Not Enough Data"
 msgstr "Not Enough Data"
 
-#: HowUsersAreLaunchingActivities
-msgctxt "HowUsersAreLaunchingActivities"
-msgid "How users are launching activities?"
-msgstr "How users are launching activities?"
+#: HowStudentsAreLaunchingActivities
+msgctxt "HowStudentsAreLaunchingActivities"
+msgid "How students are launching activities?"
+msgstr "How students are launching activities?"
 
-#: HowOftenUsersAreChangingTheirProfileSettings
-msgctxt "HowOftenUsersAreChangingTheirProfileSettings"
-msgid "How often users are changing their profile settings?"
-msgstr "How often users are changing their profile settings?"
+#: HowOftenStudentsAreChangingTheirProfileSettings
+msgctxt "HowOftenStudentsAreChangingTheirProfileSettings"
+msgid "How often students are changing their profile settings?"
+msgstr "How often students are changing their profile settings?"
 
 #: TopContributors
 msgctxt "TopContributors"
@@ -209,10 +219,10 @@ msgctxt "TopActivities"
 msgid "Top Activities"
 msgstr "Top Activities"
 
-#: RecentUsers
-msgctxt "RecentUsers"
-msgid "Recent Users"
-msgstr "Recent Users"
+#: RecentStudents
+msgctxt "RecentStudents"
+msgid "Recent Students"
+msgstr "Recent Students"
 
 #: RecentEntries
 msgctxt "RecentEntries"
@@ -426,6 +436,11 @@ msgctxt "ErrorCode19"
 msgid "You don't have permission to perform this action"
 msgstr "You don't have permission to perform this action"
 
+#: ErrorCode20
+msgctxt "ErrorCode20"
+msgid "Please login with another admin account before deleting your account"
+msgstr "Please login with another admin account before deleting your account"
+
 #: ErrorCode21
 msgctxt "ErrorCode21"
 msgid "User not defined!"
@@ -476,10 +491,10 @@ msgctxt "CountEntries"
 msgid "# of Entries"
 msgstr "# of Entries"
 
-#: HowUsersAreActive
-msgctxt "HowUsersAreActive"
-msgid "How many users actives during last month?"
-msgstr "How many users actives during last month?"
+#: HowStudentsAreActive
+msgctxt "HowStudentsAreActive"
+msgid "How many students active during last month?"
+msgstr "How many students active during last month?"
 
 #: UserActive
 msgctxt "UserActive"
@@ -498,8 +513,8 @@ msgstr "What type of client connected?"
 
 #: HowManyEntriesByJournal
 msgctxt "HowManyEntriesByJournal"
-msgid "How many entries by user?"
-msgstr "How many entries by user?"
+msgid "How many entries by student?"
+msgstr "How many entries by student?"
 
 #: AverageEntries
 msgctxt "AverageEntries"
